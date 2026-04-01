@@ -1,11 +1,23 @@
-import DataChecker as DataChecker
+"""Entry point: incarcare dataset si afisare informatii."""
 
-# Load dataset
-data_loader = DataChecker.DatasetLoader("/Users/Emma/Uni/An III/ML/Rice_data_type.csv")
-df = data_loader.load_data()
+from data_loading import (
+    DatasetLoader,
+    EDAReport,
+    print_class_distribution,
+    split_features_target,
+)
 
-data_reader = DataChecker.DatasetReader(df)
-overview = data_reader.overview()
-valori_lipsa = data_reader.missing_values()
-outliers = data_reader.outliers()
-X, y = data_reader.split_features_target()
+
+def main():
+    df = DatasetLoader().load()
+    print("Shape:", df.shape)
+    X, y = split_features_target(df)
+    print("Features:", list(X.columns))
+    print("Classes:", sorted(y.unique().tolist()))
+    print_class_distribution(y)
+    print()
+    EDAReport(df).print_report()
+
+
+if __name__ == "__main__":
+    main()
