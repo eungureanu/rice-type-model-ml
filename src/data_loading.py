@@ -1,15 +1,11 @@
-"""
-Incarca datasetul, curata etichetele target si raporteaza distributia claselor.
-Analizeaza si vizualizeaza datele (caracteristici principale, outlieri, patterns).
-EDA = Exploratory Data Analysis
-"""
+#Incarca datasetul, curata etichetele target si raporteaza distributia claselor.
+#Analizeaza si vizualizeaza datele (caracteristici principale, outlieri, patterns).
 
 import pandas as pd
 
 import config
 
 def decode_class_value(val):
-    """Decodeaza coloana Class: scoate notatia b'...' din byte notation si lasa numele clasei ca string."""
     s = str(val).strip()
     # Verificam daca stringul este in formatul b'...' astfel:
         # len(s) >= 3
@@ -22,7 +18,6 @@ def decode_class_value(val):
 
 
 def drop_leading_index_column(df):
-    """Sterge prima coloana daca e index fara nume (Unnamed sau goala)."""
     if df.empty:
         return df
     first_column = df.columns[0]
@@ -33,10 +28,6 @@ def drop_leading_index_column(df):
 
 
 class DatasetLoader:
-    """
-    Citeste CSV-ul, elimina coloana de index fara nume daca e cazul,
-    decodeaza coloana tinta (Class). Foloseste calea din config sau una data explicit.
-    """
 
     def __init__(self, csv_path=None):
         self.csv_path = csv_path if csv_path is not None else config.DATASET_PATH
@@ -50,14 +41,7 @@ class DatasetLoader:
         self.df = df
         return df
 
-
-def load_dataset():
-    """Wrapper: incarca folosind DatasetLoader cu calea din config."""
-    return DatasetLoader().load()
-
-
 def class_distribution_dataframe(y):
-    """Tabel: count si procente pe clasa."""
     counts = y.value_counts()
     procent = (counts / len(y) * 100.0).round(2)
     out = pd.DataFrame({"count": counts, "procent": procent})
@@ -66,7 +50,6 @@ def class_distribution_dataframe(y):
 
 
 def class_distribution_summary(dist):
-    """O propozitie despre dezechilibru, pe baza tabelului."""
     if dist.empty or len(dist) < 2:
         return "Prea putine clase pentru o analiza de dezechilibru."
 
@@ -90,16 +73,10 @@ def class_distribution_summary(dist):
 
 
 def class_distribution_report(y):
-    """Intoarce tabelul si propozitia de dezechilibru."""
     dist = class_distribution_dataframe(y)
     return dist, class_distribution_summary(dist)
 
 
-def split_features_target(df):
-    """X = atribute; y = etichete decodate."""
-    X = df.drop(columns=[config.TARGET_COLUMN])
-    y = df[config.TARGET_COLUMN]
-    return X, y
 
 
 def print_class_distribution(y):
@@ -111,9 +88,6 @@ def print_class_distribution(y):
 
 
 def missing_values_report(df):
-    """
-    Count si procent date lipsa pe coloana
-    """
     n = len(df)
     counts = df.isna().sum()
     percentage = (counts / n * 100.0).round(2) if n else counts * 0.0
@@ -123,7 +97,6 @@ def missing_values_report(df):
 
 
 def feature_dtypes_summary(df):
-    """Tabel: coloana, datatypes, numar de valori (non-nule)."""
     out = pd.DataFrame(
         {
             "dtype": df.dtypes.astype(str),
@@ -135,35 +108,19 @@ def feature_dtypes_summary(df):
 
 
 def iqr_outliers_report(df, exclude_columns=None):
-    """
     # IQR = InterQuartile Range
         # identifica outlieri relativ la dispersia mijlocului datelor (the middle 50% of the data)
         # Q1 (25%) first quartile, (75%) → third quartile; IQR=Q3−Q1
         # o valoare este outlier daca este <Q1−1.5*IQR sau > Q3+1.5*IQR
-    """
     exclude = set(exclude_columns or [])
     numeric = df.select_dtypes(include="number")
     cols = [c for c in numeric.columns if c not in exclude]
     rows = []
     n_total = len(df)
     for col in cols:
-        s = numeric[col].dropna()
-        if s.empty:
-            rows.append(
-                {
-                    "column": col,
-                    "n_outliers": 0,
-                    "outlier_percentage": 0.0,
-                    "q1": float("nan"),
-                    "q3": float("nan"),
-                    "iqr": float("nan"),
-                    "lower_bound": float("nan"),
-                    "upper_bound": float("nan"),
-                }
-            )
-            continue
-        q1 = float(s.quantile(0.25))
-        q3 = float(s.quantile(0.75))
+        date_coloana = numeric[col]
+        q1 = float(date_coloana.quantile(0.25))
+        q3 = float(date_coloana.quantile(0.75))
         iqr = q3 - q1
         lower = q1 - 1.5 * iqr
         upper = q3 + 1.5 * iqr
@@ -185,9 +142,6 @@ def iqr_outliers_report(df, exclude_columns=None):
 
 
 def global_descriptive_stats(df, exclude_columns=None):
-    """
-    Descrie setul de date.
-    """
     exclude = set(exclude_columns or [])
     sub = df[[c for c in df.columns if c not in exclude]]
     num = sub.select_dtypes(include="number")
@@ -196,12 +150,7 @@ def global_descriptive_stats(df, exclude_columns=None):
     return num.describe()
 
 
-class EDAReport:
-    """
-    Analiza exploratorie pe un DataFrame: tabele (missing, dtypes, IQR, describe)
-    si afisare cu headline-uri.
-    """
-
+class FullReport:
     def __init__(self, df):
         self.df = df.copy()
 
@@ -227,16 +176,17 @@ class EDAReport:
             else raport["numeric_describe_global"].to_string()
         )
         print(
-            f"------ Tipuri de date ------\n{raport['dtypes'].to_string()}\n\n"
-            f"------ Valori lipsa ------\n{raport['missing_values'].to_string()}\n\n"
-            f"------ Outlieri IQR ------\n{raport['iqr_outliers'].to_string(index=False)}\n\n"
-            f"------ Statistici descriptive ------\n{numeric_describe}\n"
+            f"******* Tipuri de date *******\n{raport['dtypes'].to_string()}\n\n"
+            f"******* Valori lipsa *******\n{raport['missing_values'].to_string()}\n\n"
+            f"******* Outlieri IQR *******\n"
+            f"{raport['iqr_outliers'].to_string(index=False)}\n\n"
+            f"******* Statistici descriptive *******\n{numeric_describe}\n"
         )
 def full_report(df):
-    """Dict EDA (aceeasi structura ca EDAReport.full_report)."""
-    return EDAReport(df).full_report()
+    return FullReport(df).full_report()
 
 
 def print_report(df):
-    """Afiseaza raportul EDA (delegat la EDAReport)."""
-    EDAReport(df).print_report()
+    FullReport(df).print_report()
+
+

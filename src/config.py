@@ -1,11 +1,6 @@
-"""
-Configurare centrala pentru a ne asigura ca rezultatele experimentelor rulate cu aceleasi setari genereaza aceleasi rezultate.
-"""
-
 from pathlib import Path
 
 SEED = 42
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
 TARGET_COLUMN = "Class"
 DATASET_PATH = "/Users/Emma/Uni/An III/ML/rice_data_type.csv"
 DEFAULT_TEST_SIZE = 0.2
